@@ -41,7 +41,7 @@ public class ActorSystemSample {
 
 ## Kabuki actor system
 
-Technically, 
+Technically, actor system is just a thread which can process asynchronous messages with provided objects (actors) and ability to dynamically create interfaces for sending such messages. 
 
 **org.kabuki.actor.ActorSystemMPSC_Dynamic** allows creation of actors only before start.
 
