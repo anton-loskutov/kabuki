@@ -61,7 +61,7 @@ Kabuki was written in java 8 and requires jdk 1.8 and [Metaja](https://github.co
 
 Environment: MacBook Pro (2.4 GHz Intel Core i7) and oracle jdk1.8.0_45
 
-Source code: [ActorPerformanceTest.java](https://github.com/anton-loskutov/kabuki/blob/master/test/com/kabuki/actor/ActorPerformanceTest.java)
+Source code: [ActorPerformanceTest.java](https://github.com/anton-loskutov/kabuki/blob/master/test/org/kabuki/actor/ActorPerformanceTest.java)
 
 Results:
 
