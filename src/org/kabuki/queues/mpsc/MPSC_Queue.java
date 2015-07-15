@@ -88,6 +88,19 @@ public class MPSC_Queue implements Queue {
 
     private final ReentrantLock consume = new ReentrantLock();
 
+    private void commit(MPSC_Consumer<MPSC_Slot>[] consumersToCommit, int consumersToCommit_length) {
+        /*** class commit { public void inline() { ***/
+        for (int i = 0; i < consumersToCommit_length; i++) {
+            try {
+                consumersToCommit[i].commit();
+            } catch (Throwable error) {
+                errorConsumer.accept(error);
+            }
+            consumersToCommit[i] = null;
+        }
+        /*** }} ***/
+    }
+
     public void consume() {
         if (!consume.tryLock()) {
             throw new IllegalStateException("Queue is for single consumer!");
@@ -105,8 +118,8 @@ public class MPSC_Queue implements Queue {
 
             /*** if (LOCK) ***/slot.l.lock();
 
-            consume:
-            for (; ; ) {
+            consume: for (;;) {
+
                 while (slot.turn != getCursor) {
                     /*** if (LOCK) ***/slot.r.awaitUninterruptibly();
                 }
@@ -135,27 +148,20 @@ public class MPSC_Queue implements Queue {
 
                 } while (slot.turn == getCursor && consumersToCommit_length < MAX_BATCH);
 
-                // commit
+                /*** new commit().inline(); /***/
                 commit(consumersToCommit, consumersToCommit_length);
+                /***/
+
                 consumersToCommit_length = 0;
             }
 
+            /*** new commit().inline(); /***/
             commit(consumersToCommit, consumersToCommit_length);
+            /***/
             this.getCursor = getCursor + 1;
 
         } finally {
             consume.unlock();
-        }
-    }
-
-    private void commit(MPSC_Consumer<MPSC_Slot>[] consumersToCommit, int consumersToCommit_length) {
-        for (int i = 0; i < consumersToCommit_length; i++) {
-            try {
-                consumersToCommit[i].commit();
-            } catch (Throwable error) {
-                errorConsumer.accept(error);
-            }
-            consumersToCommit[i] = null;
         }
     }
 

@@ -5,14 +5,15 @@ import org.kabuki.queues.Queues;
 import org.kabuki.queues.mpsc.MPSC_SlotType;
 import org.kabuki.utils.concurrent.WaitType;
 import org.metaja.common.Composite;
+import org.metaja.common.IComposite;
 import org.metaja.common.Stub;
-import org.metaja.utils.ClassUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.reducing;
+import static org.metaja.utils.ReflectionUtils.Modifier.PUBLIC;
 
 public class ActorSystemMPSC_Dynamic extends ActorSystemMPSC {
 
@@ -28,7 +29,7 @@ public class ActorSystemMPSC_Dynamic extends ActorSystemMPSC {
 
     @Override
     public synchronized <I> I asynchronize(Class<I> i, String commitMethodName, I object) {
-        if (!i.isInterface() || !ClassUtils.isPublic(i)) {
+        if (!i.isInterface() || !PUBLIC.isModified(i)) {
             throw new IllegalArgumentException(i.getCanonicalName() + " is not a public interface!");
         }
 
@@ -38,7 +39,7 @@ public class ActorSystemMPSC_Dynamic extends ActorSystemMPSC {
 
         ActorReference<I> actorReference = new ActorReference<>(i, commitMethodName, object);
         actorReferences.add(actorReference);
-        return actorReference.actor;
+        return actorReference.actorComposite.instance();
     }
 
     @Override
@@ -58,18 +59,17 @@ public class ActorSystemMPSC_Dynamic extends ActorSystemMPSC {
         public final Class<I> type;
         public final String commitMethodName;
         public final I object;
-        public final I actor;
+        public final IComposite<I> actorComposite;
 
         public ActorReference(Class<I> type, String commitMethodName, I object) {
             this.type = type;
             this.commitMethodName = commitMethodName;
             this.object = object;
-            this.actor = Composite.create(type, Stub.create(type, () -> { throw new IllegalStateException("Actor system is not started!"); }));
+            this.actorComposite = Composite.create(type, Stub.create(type, () -> { throw new IllegalStateException("Actor system is not started!"); }));
         }
 
-        @SuppressWarnings("unchecked")
         public void attach(Queue queue) {
-            ((Consumer<I>)actor).accept(
+            actorComposite.delegate(
                     commitMethodName == null
                     ? queue.asynchronize(type, object)
                     : queue.asynchronize(type, commitMethodName, object)

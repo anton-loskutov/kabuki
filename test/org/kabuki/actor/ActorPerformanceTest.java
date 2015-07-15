@@ -1,21 +1,19 @@
-package com.kabuki.actor;
+package org.kabuki.actor;
 
-import com.kabuki.Actor;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.BusySpinWaitStrategy;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import org.jctools.queues.MpmcArrayQueue;
 import org.jctools.queues.MpscArrayQueue;
-import org.kabuki.actor.ActorSystem;
-import org.kabuki.actor.ActorSystemMPSC_Dynamic;
-import org.kabuki.actor.ActorSystemMPSC_Static;
+import org.kabuki.Actor;
 import org.kabuki.utils.concurrent.AgentThread;
 import org.kabuki.utils.concurrent.GenericRunnable;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
+import java.util.Queue;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 import static org.kabuki.utils.concurrent.WaitType.LOCK;
@@ -23,18 +21,41 @@ import static org.kabuki.utils.concurrent.WaitType.SPIN;
 
 public class ActorPerformanceTest {
 
-    private static final long NUMBER_OF_MSGS = 10_000_000;
-    private static final String msg = "msg";
-
-    public static class SpeedWriter implements Actor<String> {
+    public static class CyclesCounter implements Actor<String> {
+        private final int cycle;
         private int counter = 0;
-        private long t = System.currentTimeMillis();
+        private volatile int cycles = 0;
+
+        public CyclesCounter(int cycle) {
+            this.cycle = cycle;
+        }
+
+        public int cycles() {
+            return cycles;
+        }
 
         @Override
         public void onMessage(String msg) {
+            if (++counter == cycle) {
+                counter = 0;
+                cycles++;
+            }
+        }
+    }
 
-            if (++counter == NUMBER_OF_MSGS) {
-                System.out.println(1000 * (NUMBER_OF_MSGS / (System.currentTimeMillis() - t)));
+    public static class CyclesPrinter implements Actor<String> {
+        private final int cycle;
+        private int counter = 0;
+        private long t = System.currentTimeMillis();
+
+        public CyclesPrinter(int cycle) {
+            this.cycle = cycle;
+        }
+
+        @Override
+        public void onMessage(String msg) {
+            if (++counter == cycle) {
+                System.out.println(1000 * (cycle / (System.currentTimeMillis() - t)));
                 t = System.currentTimeMillis();
                 counter = 0;
             }
@@ -49,8 +70,6 @@ public class ActorPerformanceTest {
         final Consumer<Throwable> errorConsumer = Throwable::printStackTrace;
 
         ActorSystem system;
-
-        args = new String[] { "dynamic" , "spin"};
 
         if (args.length == 0) {
             throw new IllegalArgumentException("No arguments specified!");
@@ -68,42 +87,13 @@ public class ActorPerformanceTest {
             system = new ActorSystemMPSC_Dynamic(LOCK, queueSize, threadName, errorConsumer);
         }
         else if (args[0].equalsIgnoreCase("abq")) {
-            system = new ActorSystem_A_QueueBased(threadName, new ActorSystem_A_QueueBased.Queue<String>() {
-                private ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(queueSize);
-
-                @Override
-                public void put(String o) {
-                    try {
-                        queue.put(o);
-                    } catch (InterruptedException e) {
-                        throw new AssertionError();
-                    }
-                }
-
-                @Override
-                public String take() {
-                    try {
-                        return queue.take();
-                    } catch (InterruptedException e) {
-                        throw new AssertionError();
-                    }
-                }
-            }, errorConsumer);
+            system = new ActorSystem_A_QueueBased(threadName, new ArrayBlockingQueue<>(queueSize), errorConsumer);
         }
-        else if (args[0].equalsIgnoreCase("jctools")) {
-            system = new ActorSystem_A_QueueBased(threadName, new ActorSystem_A_QueueBased.Queue<String>() {
-                private MpscArrayQueue<String> queue = new MpscArrayQueue<>(queueSize);
-
-                @Override
-                public void put(String o) {
-                    queue.offer(o);
-                }
-
-                @Override
-                public String take() {
-                    return queue.poll();
-                }
-            }, errorConsumer);
+        else if (args[0].equalsIgnoreCase("jctools") && args[1].equalsIgnoreCase("mpsc")) {
+            system = new ActorSystem_A_QueueBased(threadName, new MpscArrayQueue<>(queueSize), errorConsumer);
+        }
+        else if (args[0].equalsIgnoreCase("jctools") && args[1].equalsIgnoreCase("mpmc")) {
+            system = new ActorSystem_A_QueueBased(threadName, new MpmcArrayQueue<>(queueSize), errorConsumer);
         }
         else if (args[0].equalsIgnoreCase("disruptor") && args[1].equalsIgnoreCase("spin")) {
             system = new ActorSystem_A_DisruptorBased(threadName, queueSize, new BusySpinWaitStrategy());
@@ -117,9 +107,28 @@ public class ActorPerformanceTest {
 
         // ======= RUN =======
 
-        Actor<String> actor = system.asynchronize(Actor.unchecked(String.class), new SpeedWriter());
+        final int NUMBER_OF_MSGS = 10_000_000;
+        final String msg = "msg";
+
+        // === warmup actor and actor system ===
+        System.out.println("warmup started.");
+        int warmup_cycle = 10_000;
+        int warmup_cycles = 5 * (NUMBER_OF_MSGS / warmup_cycle);
+        CyclesCounter consumer = new CyclesCounter(warmup_cycle);
+        final Actor<String> actorWarmup = system.asynchronize(Actor.unchecked(String.class), consumer);
+        for (int w = 1; w <= warmup_cycles; w++) {
+            system.start();
+            for (int j = 0; j < warmup_cycle; j++) {
+                actorWarmup.onMessage(msg);
+            }
+            while (consumer.cycles() != w);
+            system.stop();
+        }
+        System.out.println("warmup complete.");
+
 
         system.start();
+        final Actor<String> actor = system.asynchronize(Actor.unchecked(String.class), new CyclesPrinter(NUMBER_OF_MSGS));
 
         for (int i = 1; i <= writers; i ++) {
             new Thread(() -> {
@@ -146,10 +155,6 @@ public class ActorPerformanceTest {
     }
 
     private static class ActorSystem_A_QueueBased extends ActorSystem_A {
-        public interface Queue<T> {
-            void put(T o);
-            T take();
-        }
 
         private final Queue<String> queue;
         private final AgentThread thread;
@@ -159,15 +164,26 @@ public class ActorPerformanceTest {
             this.thread = new AgentThread(threadName, (GenericRunnable) this::run, errorConsumer);
         }
 
-        public void run() throws Throwable {
+        public void run() {
             for (;;) {
-                a.onMessage(queue.take());
+                String msg = queue.poll();
+                if (msg == null) {
+                    if (Thread.interrupted()) {
+                        return;
+                    }
+                } else {
+                    a.onMessage(msg);
+                }
             }
         }
 
         @Override
         public void onMessage(String msg) {
-            queue.put(msg);
+            for (;;) {
+                if (queue.offer(msg)) {
+                    return;
+                }
+            }
         }
 
         @Override
@@ -182,13 +198,17 @@ public class ActorPerformanceTest {
     }
 
     private static class ActorSystem_A_DisruptorBased extends ActorSystem_A {
-        private final Disruptor<Event> disruptor;
-        private final RingBuffer<Event> ringBuffer;
+        private Disruptor<Event> disruptor;
+        private RingBuffer<Event> ringBuffer;
+
+        private final int queueSize;
+        private final WaitStrategy ws;
+        private ExecutorService executor;
 
         public ActorSystem_A_DisruptorBased(String threadName, int queueSize, WaitStrategy ws) {
-            disruptor = new Disruptor<>(Event::new, queueSize, Executors.newSingleThreadExecutor(r -> new Thread(null,r,threadName)), ProducerType.MULTI, ws);
-            disruptor.handleEventsWith((event, sequence, endOfBatch) -> a.onMessage(event.msg));
-            ringBuffer = disruptor.getRingBuffer();
+            this.executor = Executors.newSingleThreadExecutor(r -> new Thread(null, r, threadName));
+            this.queueSize = queueSize;
+            this.ws = ws;
         }
 
         public class Event {
@@ -197,6 +217,9 @@ public class ActorPerformanceTest {
 
         @Override
         public void start() {
+            disruptor = new Disruptor<>(Event::new, queueSize, executor, ProducerType.MULTI, ws);
+            disruptor.handleEventsWith((event, sequence, endOfBatch) -> a.onMessage(event.msg));
+            ringBuffer = disruptor.getRingBuffer();
             disruptor.start();
         }
 

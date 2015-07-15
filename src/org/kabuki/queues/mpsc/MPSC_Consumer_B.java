@@ -27,15 +27,20 @@ public class MPSC_Consumer_B/***#_$a_id$_$id$#***/ implements MPSC_Consumer<MPSC
 
         /***
          # o.$accept.getName()$( #
-         COLLECTIONS.iterate(ARRAYS.asList(accept.getParameterTypes()), new int[] {1, 1}, (type, c) -> {
-            if (type.equals(Double.TYPE) || type.equals(Float.TYPE)) {
-                # ($type.getCanonicalName()$) java.lang.Double.longBitsToDouble(slot.l$c[0]++$) #
-            } else if (type.isPrimitive()) {
-                # ($type.getCanonicalName()$) slot.l$c[0]++$ #
+         int[] x = new int[] {1, 1}; // counter of primitive and reference types
+         ITERATION.asStream(accept.getParameterTypes()).forEach((type) -> {
+            # ($type.it().getCanonicalName()$) #
+            if (REFLECTION.isFloating(type.it())) {
+                # java.lang.Double.longBitsToDouble(slot.l$x[0]++$) #
+            } else if (REFLECTION.isPrimitive(type.it())) {
+                # slot.l$x[0]++$ #
             } else {
-                # ($type.getCanonicalName()$) slot.o$c[1]++$ #
+                # slot.o$x[1]++$ #
             }
-         }, ()->{#,#});
+            if (!type.last()) {
+                # , #
+            }
+         });
          #); #
          ***/
     }

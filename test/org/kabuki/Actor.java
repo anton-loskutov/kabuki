@@ -1,4 +1,4 @@
-package com.kabuki;
+package org.kabuki;
 
 public interface Actor<M> {
 

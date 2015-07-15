@@ -1,9 +1,7 @@
-package com.kabuki.queues;
+package org.kabuki.queues;
 
-import com.kabuki.Actor;
+import org.kabuki.Actor;
 import junit.framework.TestCase;
-import org.kabuki.queues.Queue;
-import org.kabuki.queues.Queues;
 import org.kabuki.queues.mpsc.MPSC_SlotType;
 import org.kabuki.utils.concurrent.WaitType;
 

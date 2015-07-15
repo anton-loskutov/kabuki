@@ -4,10 +4,13 @@ import org.kabuki.queues.Queues;
 import org.kabuki.queues.mpsc.MPSC_SlotType;
 import org.kabuki.utils.concurrent.WaitType;
 import org.metaja.utils.ClassUtils;
+import org.metaja.utils.ReflectionUtils;
 
 import java.util.HashSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static org.metaja.utils.ReflectionUtils.Modifier.PUBLIC;
 
 public class ActorSystemMPSC_Static extends ActorSystemMPSC {
 
@@ -17,7 +20,7 @@ public class ActorSystemMPSC_Static extends ActorSystemMPSC {
         super(threadName, errorConsumer);
         this.classes = new HashSet<>();
         for (Class i : classes) {
-            if (!ClassUtils.isPublic(i)) {
+            if (!PUBLIC.isModified(i)) {
                 throw new IllegalArgumentException(i.getCanonicalName() + " is not public!");
             }
             this.classes.add(i);
@@ -28,7 +31,7 @@ public class ActorSystemMPSC_Static extends ActorSystemMPSC {
 
     @Override
     public synchronized <I> I asynchronize(Class<I> i, String commitMethodName, I object) {
-        if (!i.isInterface() || !ClassUtils.isPublic(i)) {
+        if (!i.isInterface() || !PUBLIC.isModified(i)) {
             throw new IllegalArgumentException(i.getCanonicalName() + " is not a public interface!");
         }
 

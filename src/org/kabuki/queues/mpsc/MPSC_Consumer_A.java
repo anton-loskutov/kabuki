@@ -11,13 +11,9 @@ public class MPSC_Consumer_A/***#_$id$ implements $iface.getCanonicalName()$ #**
     /***/
     public MPSC_Consumer<MPSC_Slot> c;
     /***
-     for (int m = 0; m < iface.getMethods().length; m++) {
-        java.lang.reflect.Method method = iface.getMethods()[m];
-        if ((method.getModifiers() & java.lang.reflect.Modifier.STATIC) == 0) {
-
-            # public final MPSC_Consumer<MPSC_Slot> c$m$; #
-        }
-     }
+     REFLECTION.getMethods(iface, STATIC::notModified).forEach((method) -> {
+        # public final MPSC_Consumer<MPSC_Slot> c$method.ix()$; #
+     });
     ***/
 
     public final MutableBoolean commitFlag = new MutableBoolean();
@@ -25,48 +21,42 @@ public class MPSC_Consumer_A/***#_$id$ implements $iface.getCanonicalName()$ #**
     public MPSC_Consumer_A/***#_$id$#***/ (MPSC_Queue q, Object target) {
         this.q = q;
         /***
-         for (int m = 0; m < iface.getMethods().length; m++) {
-            java.lang.reflect.Method method = iface.getMethods()[m];
-            if ((method.getModifiers() & java.lang.reflect.Modifier.STATIC) == 0) {
-
-                String clazz = IMPORT("org/kabuki/queues/mpsc/MPSC_Consumer_B.java", "UTF-8", id, m + 1, method, commit)[0];
-                # this.c$m$ = $ NEW(clazz, "this.commitFlag", "target") $ #
-            }
-         }
+         REFLECTION.getMethods(iface, STATIC::notModified).forEach((method) -> {
+            String clazz = IMPORT("org/kabuki/queues/mpsc/MPSC_Consumer_B.java", "UTF-8", id, method.ix() + 1, method.it(), commit)[0];
+            # this.c$method.ix()$ = $ NEW(clazz, "this.commitFlag", "target") $ #
+         });
          ***/
     }
 
     /***/
     public void accept(Object o) {
         /***
-         for (int m = 0; m < iface.getMethods().length; m++) {
-            java.lang.reflect.Method method = iface.getMethods()[m];
-            if ((method.getModifiers() & java.lang.reflect.Modifier.STATIC) == 0) {
-
-            # public void $method.getName()$( #
-            COLLECTIONS.iterate(ARRAYS.asList(method.getParameterTypes()), new int[] {1, 1}, (type, c) -> {
-                if (type.isPrimitive()) {
-                    # $type.getCanonicalName()$ p$c[0]++$ #
-                } else {
-                    # $type.getCanonicalName()$ o$c[1]++$ #
+         REFLECTION.getMethods(iface, STATIC::notModified).forEach((method) -> {
+            # public void $method.it().getName()$( #
+            ITERATION.asStream(method.it().getParameterTypes()).forEach((type) -> {
+                # $type.it().getCanonicalName()$ arg$type.ix()$ #
+                if (!type.last()) {
+                    # , #
                 }
-            }, ()->{#,#});
+            });
             # ) { #
          ***/
 
         MPSC_Slot s = q.obtainPutSlot();
 
         /***
-            COLLECTIONS.iterate(ARRAYS.asList(method.getParameterTypes()), new int[] {1, 1}, (type, c) -> {
-                if (type.equals(Double.TYPE) || type.equals(Float.TYPE)) {
-                    # s.p$c[0]$ = java.lang.Double.doubleToRawLongBits(p$c[0]++$); #
-                } else if (type.isPrimitive()) {
-                    # s.p$c[0]$ = p$c[0]++$; #
+            int[] x = new int[] {1, 1}; // counter of primitive and reference types
+            ITERATION.asStream(method.it().getParameterTypes()).forEach((type) -> {
+                if (REFLECTION.isFloating(type.it())) {
+                    # s.p$x[0]++$ = java.lang.Double.doubleToRawLongBits(arg$type.ix()$); #
+                } else if (REFLECTION.isPrimitive(type.it())) {
+                    # s.p$x[0]++$ = arg$type.ix()$; #
                 } else {
-                    # s.o$c[1]$ = o$c[1]++$; #
+                    # s.o$x[1]++$ = arg$type.ix()$; #
                 }
             });
-            #s.consumer = c$m$;#
+
+            #s.consumer = c$method.ix()$;#
             #s.commit();#
         /***/
 
@@ -74,7 +64,7 @@ public class MPSC_Consumer_A/***#_$id$ implements $iface.getCanonicalName()$ #**
         s.consumer = c;
         s.commit();
 
-        /***# } # }} /***/
+        /***# } # }); /***/
     }
     /***/
 }

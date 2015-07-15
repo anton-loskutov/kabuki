@@ -49,7 +49,7 @@ Technically, actor system is just a thread which can process asynchronous messag
 
 **org.kabuki.actor.ActorSystemProxy** allows creation of actors at any time and of any type, but is much slower and is not garbage-free.
 
-All actor systems are based on bounded queues, so there is a backpressure and producers can become blocked by consumers when sending a message if consumers are slow; queue size can be specified with a constructor.
+All actor systems are based on bounded queues, so there is a back pressure and producers can become blocked by consumers when sending a message if consumers are slow; queue size can be specified with a constructor.
 
 MPSC actor systems support two wait strategies - _SPIN_ (for low-latency) and _LOCK_ (for accurate resource management); strategy can be specified with a constructor. 
 
@@ -59,4 +59,17 @@ Kabuki was written in java 8 and requires jdk 1.8 and [Metaja](https://github.co
 
 ## Kabuki benchmarks
 
-_TODO:_
+Environment: MacBook Pro (2.4 GHz Intel Core i7) and oracle jdk1.8.0_45
+
+Source code: [ActorPerformanceTest.java](https://github.com/anton-loskutov/kabuki/blob/master/test/com/kabuki/actor/ActorPerformanceTest.java)
+
+Results:
+| Engine  | Throughput (millions/sec)|
+| ------------- | ------------- |
+| ArrayBlockingQueue (spin) | ~4 |
+| [Disruptor](https://github.com/LMAX-Exchange/disruptor) (lock) | ~10 |
+| [Disruptor](https://github.com/LMAX-Exchange/disruptor) (spin) | ~17 |
+| [JCTools](https://github.com/JCTools/JCTools) (mpsc spin) | ~22 |
+| Kabuki (lock) | ~24 |
+| [JCTools](https://github.com/JCTools/JCTools) (mpmc spin) | ~25 |
+| Kabuki (spin) | ~32 |

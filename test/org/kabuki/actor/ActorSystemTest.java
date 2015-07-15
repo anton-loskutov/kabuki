@@ -1,4 +1,4 @@
-package com.kabuki.actor;
+package org.kabuki.actor;
 
 import junit.framework.TestCase;
 import org.kabuki.actor.ActorSystem;

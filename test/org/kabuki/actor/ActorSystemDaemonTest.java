@@ -1,8 +1,7 @@
-package com.kabuki.actor;
+package org.kabuki.actor;
 
-import com.kabuki.Actor;
+import org.kabuki.Actor;
 import junit.framework.TestCase;
-import org.kabuki.actor.ActorSystemMPSC_Static;
 
 public class ActorSystemDaemonTest extends TestCase {
 
