@@ -65,11 +65,6 @@ Source code: [ActorPerformanceTest.java](https://github.com/anton-loskutov/kabuk
 
 Results:
 
-|Table Header 1|Table Header 2           |
-|--------------|-------------------------|
-|Content       |http://example.org       |
-|Content       |http://localhost:\<port\>|
-
 | Engine  | Throughput (millions/sec)|
 | ------------- | ------------- |
 | ArrayBlockingQueue (spin) | ~4 |
