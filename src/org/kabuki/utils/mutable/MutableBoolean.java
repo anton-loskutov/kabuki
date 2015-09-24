@@ -1,4 +1,4 @@
-package org.kabuki.utils;
+package org.kabuki.utils.mutable;
 
 public class MutableBoolean {
     private boolean value;

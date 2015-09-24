@@ -1,15 +1,13 @@
 package org.kabuki.utils.concurrent;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
 public class GenericRunnableQueue implements GenericRunnable {
 
     private final BlockingQueue<GenericRunnable> queue;
 
     public GenericRunnableQueue(int queueSize) {
-        this.queue = queueSize > 0 ? new ArrayBlockingQueue<>(queueSize) : new LinkedBlockingQueue<>();
+        this.queue = queueSize > 0 ? new ArrayBlockingQueue<>(queueSize) : new LinkedTransferQueue<>();
     }
 
     public void put(GenericRunnable runnable) {
@@ -39,8 +37,8 @@ public class GenericRunnableQueue implements GenericRunnable {
 
                 runnable = queue.poll();
                 if (runnable == null) {
-                    onSleep();
-                    runnable = queue.take();
+                    long timeout = onSleep();
+                    runnable = queue.poll(timeout, TimeUnit.MILLISECONDS);
                 }
             }
         } catch (InterruptedException e) {
@@ -48,7 +46,7 @@ public class GenericRunnableQueue implements GenericRunnable {
         }
     }
 
-    protected void onSleep() {
-
+    protected long onSleep() {
+        return Long.MAX_VALUE;
     }
 }

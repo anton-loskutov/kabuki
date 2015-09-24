@@ -1,11 +1,10 @@
 package org.kabuki.actor;
 
 import junit.framework.TestCase;
-import org.kabuki.actor.ActorSystem;
-import org.kabuki.actor.ActorSystemMPSC_Dynamic;
-import org.kabuki.actor.ActorSystemMPSC_Static;
 import org.kabuki.utils.concurrent.WaitType;
-import static org.kabuki.utils.concurrent.WaitType.*;
+
+import static org.kabuki.utils.concurrent.WaitType.LOCK;
+import static org.kabuki.utils.concurrent.WaitType.SPIN;
 
 public class ActorSystemTest extends TestCase {
 

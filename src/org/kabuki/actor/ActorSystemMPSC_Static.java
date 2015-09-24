@@ -3,8 +3,6 @@ package org.kabuki.actor;
 import org.kabuki.queues.Queues;
 import org.kabuki.queues.mpsc.MPSC_SlotType;
 import org.kabuki.utils.concurrent.WaitType;
-import org.metaja.utils.ClassUtils;
-import org.metaja.utils.ReflectionUtils;
 
 import java.util.HashSet;
 import java.util.function.Consumer;

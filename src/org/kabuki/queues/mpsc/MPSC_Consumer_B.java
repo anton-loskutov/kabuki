@@ -2,7 +2,7 @@
 
 package org.kabuki.queues.mpsc;
 
-import org.kabuki.utils.MutableBoolean;
+import org.kabuki.utils.mutable.MutableBoolean;
 
 public class MPSC_Consumer_B/***#_$a_id$_$id$#***/ implements MPSC_Consumer<MPSC_Slot> {
 
@@ -28,7 +28,7 @@ public class MPSC_Consumer_B/***#_$a_id$_$id$#***/ implements MPSC_Consumer<MPSC
         /***
          # o.$accept.getName()$( #
          int[] x = new int[] {1, 1}; // counter of primitive and reference types
-         ITERATION.asStream(accept.getParameterTypes()).forEach((type) -> {
+         ITERATION.stream(accept.getParameterTypes()).forEach((type) -> {
             # ($type.it().getCanonicalName()$) #
             if (REFLECTION.isFloating(type.it())) {
                 # java.lang.Double.longBitsToDouble(slot.l$x[0]++$) #

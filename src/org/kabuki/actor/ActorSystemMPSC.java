@@ -33,7 +33,7 @@ abstract class ActorSystemMPSC implements ActorSystem {
         if (queue == null) {
             throw new IllegalStateException("Actor system can not be started after error raised!");
         }
-        thread.start(daemon);
+        thread.startThread(daemon);
         started = true;
     }
 

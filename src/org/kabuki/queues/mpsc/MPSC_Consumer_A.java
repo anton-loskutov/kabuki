@@ -2,7 +2,7 @@
 
 package org.kabuki.queues.mpsc;
 
-import org.kabuki.utils.MutableBoolean;
+import org.kabuki.utils.mutable.MutableBoolean;
 
 public class MPSC_Consumer_A/***#_$id$ implements $iface.getCanonicalName()$ #***/ {
 
@@ -33,7 +33,7 @@ public class MPSC_Consumer_A/***#_$id$ implements $iface.getCanonicalName()$ #**
         /***
          REFLECTION.getMethods(iface, STATIC::notModified).forEach((method) -> {
             # public void $method.it().getName()$( #
-            ITERATION.asStream(method.it().getParameterTypes()).forEach((type) -> {
+            ITERATION.stream(method.it().getParameterTypes()).forEach((type) -> {
                 # $type.it().getCanonicalName()$ arg$type.ix()$ #
                 if (!type.last()) {
                     # , #
@@ -46,7 +46,7 @@ public class MPSC_Consumer_A/***#_$id$ implements $iface.getCanonicalName()$ #**
 
         /***
             int[] x = new int[] {1, 1}; // counter of primitive and reference types
-            ITERATION.asStream(method.it().getParameterTypes()).forEach((type) -> {
+            ITERATION.stream(method.it().getParameterTypes()).forEach((type) -> {
                 if (REFLECTION.isFloating(type.it())) {
                     # s.p$x[0]++$ = java.lang.Double.doubleToRawLongBits(arg$type.ix()$); #
                 } else if (REFLECTION.isPrimitive(type.it())) {

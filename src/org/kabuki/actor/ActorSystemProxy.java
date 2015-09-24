@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 
 public class ActorSystemProxy implements ActorSystem {
@@ -25,9 +26,10 @@ public class ActorSystemProxy implements ActorSystem {
     public ActorSystemProxy(int queueSize, String threadName, OverflowMode overflowMode, Consumer<Throwable> errorConsumer) {
         this.queue = new GenericRunnableQueue(queueSize) {
             @Override
-            protected void onSleep() {
+            protected long onSleep() {
                 commitCalls.forEach(CommitCall::run);
                 cycle++;
+                return Long.MAX_VALUE;
             }
         };
         this.thread = new AgentThread(threadName, queue, error -> errorConsumer.accept(error instanceof MethodCall.Error ? error.getCause() : error));
@@ -35,7 +37,7 @@ public class ActorSystemProxy implements ActorSystem {
     }
 
     public void start() {
-        thread.start(false);
+        thread.startThread(false);
     }
 
     public void stop() {
@@ -43,7 +45,7 @@ public class ActorSystemProxy implements ActorSystem {
     }
 
     public void startAsDaemon() {
-        thread.start(true);
+        thread.startThread(true);
     }
 
     @Override
@@ -80,6 +82,38 @@ public class ActorSystemProxy implements ActorSystem {
         return actor;
     }
 
+    public interface Listener {
+        void onError(Throwable error);
+        long onSleep();
+        void onOverflow(OverflowMode overflowMode);
+
+        static Listener create(
+                Consumer<Throwable> onError,
+                Supplier<Long> onSleep,
+                Consumer<OverflowMode> onOverflow
+        ) {
+            return new Listener() {
+                @Override
+                public void onError(Throwable error) {
+                    onError.accept(error);
+                }
+
+                @Override
+                public long onSleep() {
+                    return onSleep.get();
+                }
+
+                @Override
+                public void onOverflow(OverflowMode overflowMode) {
+                    onOverflow.accept(overflowMode);
+                }
+            };
+        }
+
+        static Listener create(Consumer<Throwable> onError) {
+            return create(onError, () -> Long.MAX_VALUE, o -> onError.accept(new Error("Overflow and '" + o + "'!")));
+        }
+    }
     // ---- private -----
 
     private static Consumer<GenericRunnable> toConsumer(GenericRunnableQueue queue, OverflowMode mode) {

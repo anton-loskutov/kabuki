@@ -1,8 +1,5 @@
 package org.kabuki.actor;
 
-import org.kabuki.actor.ActorSystem;
-import org.kabuki.actor.ActorSystemMPSC_Dynamic;
-
 public class ActorSystemSample {
 
     public interface I {
